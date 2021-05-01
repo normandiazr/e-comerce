@@ -1,10 +1,11 @@
-import React from 'react';
+import React , { useState } from 'react';
 import { View} from 'react-native';
 import { TextInput, Button} from "react-native-paper";
 import { useFormik  } from 'formik';
 import * as Yup from "yup";
 import { registerAPI  } from "../../api/user";
-
+import Toast from "react-native-root-toast";
+import { RootSiblingParent } from "react-native-root-siblings";
 import { formStyle  } from '../../styles';
 
 
@@ -12,27 +13,42 @@ export default function RegisterForm( props ) {
 
     const { changeForms } = props ;
 
+    const [ loading, setLoading ] = useState(false) ;
+
     const formik = useFormik({
         initialValues: initialValues(),
         validationSchema: Yup.object( validationSchema() ),
         onSubmit: async( formData ) => {
+
+                setLoading(true) ;
                 
                 try {
 
-                    await registerAPI( formData ) ;
-                    console.log("ok");
-                    console.log( formData );
+                    const response = await registerAPI( formData ) ;
+                    if( response.statusCode )throw "Usuario y/o email ya existen, repita su operacion" ;
+                    
+                    changeForms();
                     
                 } catch (error) {
-                    console.log(error);
+                    Toast.show(error, { 
+                        position: Toast.positions.CENTER,
+                        shadow: false,
+                        animation: true,
+                        hideOnPress: true,
+                        delay: 10,
+
+                    }) ;
                 }
+
+                setLoading(false);
+                
 
             },
     });
 
     return (
         <View>
-
+            <RootSiblingParent>
            <TextInput 
                 label="Email" 
                 style={ formStyle.input } 
@@ -64,7 +80,13 @@ export default function RegisterForm( props ) {
                 error={ formik.errors.rpassword}
                 />
             
-           <Button mode="container" style={formStyle.btnSucces} onPress={ formik.handleSubmit} >Registrarse</Button>
+           <Button 
+                mode="container" 
+                style={formStyle.btnSucces} 
+                onPress={ formik.handleSubmit} 
+                loading = { loading }
+                
+                >Registrarse</Button>
 
            <Button 
            mode="text" 
@@ -72,7 +94,7 @@ export default function RegisterForm( props ) {
            labelStyle={ formStyle.btnTextLabel}
            onPress= { changeForms } 
            >Iniciar sesión</Button>
-          
+          </RootSiblingParent>
         </View>
     )
 }
